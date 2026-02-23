@@ -56,8 +56,8 @@ async def login(user_credentials: UserLogin, db: Session = Depends(get_db)):
         )
     
     # Create tokens
-    access_token = create_access_token(data={"sub": user.user_id})
-    refresh_token = create_refresh_token(data={"sub": user.user_id})
+    access_token = create_access_token(data={"sub": str(user.user_id)})
+    refresh_token = create_refresh_token(data={"sub": str(user.user_id)})
     
     return {
         "access_token": access_token,
@@ -79,7 +79,7 @@ async def refresh_token(token_data: TokenRefresh, db: Session = Depends(get_db))
                 detail="Invalid token type"
             )
         
-        user_id = payload.get("sub")
+        user_id = int(payload.get("sub"))
         user = db.query(User).filter(User.user_id == user_id).first()
         
         if not user:
@@ -89,8 +89,8 @@ async def refresh_token(token_data: TokenRefresh, db: Session = Depends(get_db))
             )
         
         # Create new tokens
-        access_token = create_access_token(data={"sub": user.user_id})
-        new_refresh_token = create_refresh_token(data={"sub": user.user_id})
+        access_token = create_access_token(data={"sub": str(user.user_id)})
+        new_refresh_token = create_refresh_token(data={"sub": str(user.user_id)})
         
         return {
             "access_token": access_token,

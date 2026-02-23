@@ -7,6 +7,8 @@ import Home from './pages/Home'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
+import CreateForm from './pages/CreateForm'
+import FillForm from './pages/FillForm'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -52,6 +54,16 @@ function App() {
                   </ProtectedRoute>
                 } 
               />
+              <Route 
+                path="/create-form" 
+                element={
+                  <ProtectedRoute>
+                    <CreateForm />
+                  </ProtectedRoute>
+                } 
+              />
+              {/* Public form filling route */}
+              <Route path="/form/:formId" element={<FillForm />} />
               {/* Redirect unknown routes to home */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
