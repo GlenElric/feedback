@@ -6,10 +6,7 @@ export default function Register() {
   const navigate = useNavigate()
   const { register } = useAuth()
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    confirmPassword: '',
-    fullName: ''
+    email: '', password: '', confirmPassword: '', fullName: ''
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -18,53 +15,59 @@ export default function Register() {
     e.preventDefault()
     setError('')
 
-    // Validation
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match')
       return
     }
-
     if (formData.password.length < 6) {
       setError('Password must be at least 6 characters')
       return
     }
 
     setLoading(true)
-
     try {
       await register(formData.email, formData.password, formData.fullName)
-      // Registration successful, redirect to login
-      navigate('/login', { state: { message: 'Registration successful! Please login.' } })
+      navigate('/login', { state: { message: 'Account created. Please sign in.' } })
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to register. Please try again.')
+      setError(err.response?.data?.detail || 'Registration failed. Please try again.')
     } finally {
       setLoading(false)
     }
   }
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    })
+    setFormData({ ...formData, [e.target.name]: e.target.value })
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center" style={{ padding: '2rem' }}>
-      <div className="card" style={{ maxWidth: '450px', width: '100%' }}>
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>Create Account</h1>
-          <p className="text-muted">Join the Feedback Platform</p>
+      <div className="fade-in" style={{ maxWidth: '380px', width: '100%' }}>
+
+        <div style={{ marginBottom: '2.5rem' }}>
+          <Link to="/" style={{
+            fontSize: '0.8rem', color: 'var(--gray-500)',
+            textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+            transition: 'color 0.2s',
+          }}
+            onMouseEnter={e => e.currentTarget.style.color = 'var(--white)'}
+            onMouseLeave={e => e.currentTarget.style.color = 'var(--gray-500)'}
+          >
+            ← Back
+          </Link>
         </div>
+
+        <h1 style={{ fontSize: '1.6rem', marginBottom: '0.4rem' }}>Create an account</h1>
+        <p style={{ color: 'var(--gray-500)', fontSize: '0.9rem', marginBottom: '2rem' }}>
+          Start collecting feedback in minutes
+        </p>
 
         {error && (
           <div style={{
-            padding: '1rem',
-            marginBottom: '1.5rem',
-            backgroundColor: 'rgba(239, 68, 68, 0.1)',
-            border: '1px solid rgba(239, 68, 68, 0.3)',
+            padding: '0.75rem 1rem', marginBottom: '1.5rem',
+            border: '1px solid rgba(220,38,38,0.2)',
             borderRadius: 'var(--radius-md)',
-            color: 'var(--color-error)'
+            color: '#f87171', fontSize: '0.85rem',
+            background: 'rgba(220,38,38,0.05)',
           }}>
             {error}
           </div>
@@ -72,76 +75,66 @@ export default function Register() {
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="fullName" className="form-label">Full Name</label>
+            <label htmlFor="fullName" className="form-label">Full name</label>
             <input
-              type="text"
-              id="fullName"
-              name="fullName"
+              type="text" id="fullName" name="fullName"
               className="form-input"
-              value={formData.fullName}
-              onChange={handleChange}
-              required
-              placeholder="John Doe"
+              value={formData.fullName} onChange={handleChange}
+              required placeholder="Jane Doe"
             />
           </div>
 
           <div className="form-group">
             <label htmlFor="email" className="form-label">Email</label>
             <input
-              type="email"
-              id="email"
-              name="email"
+              type="email" id="email" name="email"
               className="form-input"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              placeholder="you@example.com"
+              value={formData.email} onChange={handleChange}
+              required placeholder="you@example.com"
+              autoComplete="email"
             />
           </div>
 
           <div className="form-group">
             <label htmlFor="password" className="form-label">Password</label>
             <input
-              type="password"
-              id="password"
-              name="password"
+              type="password" id="password" name="password"
               className="form-input"
-              value={formData.password}
-              onChange={handleChange}
-              required
-              placeholder="••••••••"
+              value={formData.password} onChange={handleChange}
+              required placeholder="Min. 6 characters"
               minLength="6"
+              autoComplete="new-password"
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="confirmPassword" className="form-label">Confirm Password</label>
+            <label htmlFor="confirmPassword" className="form-label">Confirm password</label>
             <input
-              type="password"
-              id="confirmPassword"
-              name="confirmPassword"
+              type="password" id="confirmPassword" name="confirmPassword"
               className="form-input"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              required
-              placeholder="••••••••"
+              value={formData.confirmPassword} onChange={handleChange}
+              required placeholder="••••••••"
+              autoComplete="new-password"
             />
           </div>
 
-          <button 
-            type="submit" 
-            className="btn btn-primary" 
+          <button
+            type="submit" className="btn btn-primary"
             disabled={loading}
             style={{ width: '100%', marginTop: '0.5rem' }}
           >
-            {loading ? 'Creating account...' : 'Create Account'}
+            {loading ? 'Creating account…' : 'Create account'}
           </button>
         </form>
 
-        <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
-          <p className="text-muted">
+        <div style={{ marginTop: '2rem', textAlign: 'center' }}>
+          <p style={{ color: 'var(--gray-500)', fontSize: '0.85rem', marginBottom: 0 }}>
             Already have an account?{' '}
-            <Link to="/login" style={{ color: 'var(--color-primary)', textDecoration: 'none' }}>
+            <Link to="/login" style={{
+              color: 'var(--gray-200)', textDecoration: 'none',
+              borderBottom: '1px solid var(--gray-700)',
+              paddingBottom: '1px',
+            }}>
               Sign in
             </Link>
           </p>

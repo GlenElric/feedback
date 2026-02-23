@@ -1,27 +1,32 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import api from '../utils/api'
 
 function RatingInput({ value, onChange }) {
   const [hover, setHover] = useState(0)
   return (
-    <div style={{ display: 'flex', gap: '0.35rem' }}>
+    <div style={{ display: 'flex', gap: '0.4rem' }}>
       {[1, 2, 3, 4, 5].map(n => (
-        <span
+        <button
+          type="button"
           key={n}
           onClick={() => onChange(n)}
           onMouseEnter={() => setHover(n)}
           onMouseLeave={() => setHover(0)}
           style={{
-            fontSize: '2rem',
+            width: '40px', height: '40px',
+            borderRadius: 'var(--radius-sm)',
+            border: '1px solid',
+            borderColor: (hover >= n || value >= n) ? 'var(--white)' : 'var(--color-border-light)',
+            background: (hover >= n || value >= n) ? 'var(--white)' : 'transparent',
+            color: (hover >= n || value >= n) ? 'var(--black)' : 'var(--gray-500)',
+            fontSize: '0.85rem', fontWeight: 600,
             cursor: 'pointer',
-            transition: 'transform 150ms ease, filter 150ms ease',
-            transform: (hover >= n || value >= n) ? 'scale(1.15)' : 'scale(1)',
-            filter: (hover >= n || value >= n) ? 'none' : 'grayscale(1) opacity(0.35)',
+            transition: 'all 0.15s ease',
           }}
         >
-          ⭐
-        </span>
+          {n}
+        </button>
       ))}
     </div>
   )
@@ -29,7 +34,6 @@ function RatingInput({ value, onChange }) {
 
 export default function FillForm() {
   const { formId } = useParams()
-  const navigate = useNavigate()
 
   const [form, setForm] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -39,29 +43,21 @@ export default function FillForm() {
   const [submitted, setSubmitted] = useState(false)
   const [startTime] = useState(Date.now())
 
-  useEffect(() => {
-    fetchForm()
-  }, [formId])
+  useEffect(() => { fetchForm() }, [formId])
 
   const fetchForm = async () => {
     try {
       const res = await api.get(`/public/forms/${formId}`)
       setForm(res.data)
-      // Pre-populate default values
       const defaults = {}
       for (const q of res.data.questions) {
-        if (q.question_type === 'yes_no') defaults[q.question_id] = ''
-        else if (q.question_type === 'rating') defaults[q.question_id] = 0
-        else if (q.question_type === 'multiple_choice') defaults[q.question_id] = ''
-        else defaults[q.question_id] = ''
+        defaults[q.question_id] = q.question_type === 'rating' ? 0 : ''
       }
       setAnswers(defaults)
     } catch (err) {
       const detail = err.response?.data?.detail
-      setError(typeof detail === 'string' ? detail : 'Form not found or is no longer accepting responses.')
-    } finally {
-      setLoading(false)
-    }
+      setError(typeof detail === 'string' ? detail : 'Form not found or no longer accepting responses.')
+    } finally { setLoading(false) }
   }
 
   const updateAnswer = (questionId, value) => {
@@ -72,12 +68,11 @@ export default function FillForm() {
     e.preventDefault()
     setError('')
 
-    // Validate required questions
     for (const q of form.questions) {
       const val = answers[q.question_id]
       if (q.is_required) {
         if (val === '' || val === null || val === undefined || (q.question_type === 'rating' && val === 0)) {
-          setError(`Please answer the required question: "${q.question_text}"`)
+          setError(`Please answer: "${q.question_text}"`)
           return
         }
       }
@@ -94,131 +89,118 @@ export default function FillForm() {
             const val = answers[q.question_id]
             return val !== '' && val !== null && val !== undefined && !(q.question_type === 'rating' && val === 0)
           })
-          .map(q => ({
-            question_id: q.question_id,
-            answer_value: answers[q.question_id],
-          })),
+          .map(q => ({ question_id: q.question_id, answer_value: answers[q.question_id] })),
       }
       await api.post(`/public/forms/${formId}/responses`, payload)
       setSubmitted(true)
     } catch (err) {
       const detail = err.response?.data?.detail
-      setError(typeof detail === 'string' ? detail : 'Failed to submit. Please try again.')
-    } finally {
-      setSubmitting(false)
-    }
+      setError(typeof detail === 'string' ? detail : 'Submission failed. Please try again.')
+    } finally { setSubmitting(false) }
   }
 
-  // ─── Loading state ───
+  // Loading
   if (loading) {
     return (
-      <div className="min-h-screen" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="min-h-screen flex items-center justify-center">
         <div style={{ textAlign: 'center' }}>
-          <div className="skeleton" style={{ width: '300px', height: '32px', margin: '0 auto 1rem' }}></div>
-          <div className="skeleton" style={{ width: '200px', height: '18px', margin: '0 auto' }}></div>
+          <div className="skeleton" style={{ width: '240px', height: '24px', margin: '0 auto 0.75rem' }}></div>
+          <div className="skeleton" style={{ width: '160px', height: '14px', margin: '0 auto' }}></div>
         </div>
       </div>
     )
   }
 
-  // ─── Error state ───
+  // Error – form not found
   if (!form && error) {
     return (
-      <div className="min-h-screen" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div className="card" style={{ textAlign: 'center', padding: '3rem', maxWidth: '500px' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🚫</div>
-          <h3 style={{ marginBottom: '1rem' }}>Form Unavailable</h3>
-          <p className="text-muted">{error}</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="fade-in" style={{ textAlign: 'center', maxWidth: '400px', padding: '2rem' }}>
+          <h2 style={{ marginBottom: '0.75rem' }}>Unavailable</h2>
+          <p style={{ color: 'var(--gray-500)', fontSize: '0.9rem' }}>{error}</p>
         </div>
       </div>
     )
   }
 
-  // ─── Success state ───
+  // Success
   if (submitted) {
     return (
-      <div className="min-h-screen" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div className="card fade-in" style={{ textAlign: 'center', padding: '3rem', maxWidth: '520px' }}>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="fade-in" style={{ textAlign: 'center', maxWidth: '420px', padding: '2rem' }}>
           <div style={{
-            width: '80px', height: '80px', borderRadius: '50%',
-            background: 'linear-gradient(135deg, var(--color-success), hsl(142, 71%, 55%))',
+            width: '56px', height: '56px', borderRadius: '50%',
+            border: '2px solid var(--gray-300)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            margin: '0 auto 1.5rem', fontSize: '2.5rem',
-          }}>
-            ✓
-          </div>
-          <h2 style={{ marginBottom: '0.75rem' }}>Thank You!</h2>
-          <p className="text-muted" style={{ marginBottom: '2rem', fontSize: '1.05rem' }}>
-            Your feedback has been submitted successfully. We really appreciate you taking the time!
+            margin: '0 auto 1.5rem', fontSize: '1.4rem', color: 'var(--gray-300)',
+          }}>✓</div>
+          <h2 style={{ marginBottom: '0.5rem' }}>Thank you</h2>
+          <p style={{ color: 'var(--gray-500)', fontSize: '0.95rem', marginBottom: '2rem' }}>
+            Your response has been recorded.
           </p>
-          <button className="btn btn-primary" onClick={() => window.location.reload()}>
-            Submit Another Response
+          <button className="btn btn-secondary" onClick={() => window.location.reload()}>
+            Submit another
           </button>
         </div>
       </div>
     )
   }
 
-  // ─── Form filling UI ───
+  // Form
   return (
-    <div className="min-h-screen" style={{ paddingTop: '2rem', paddingBottom: '3rem' }}>
-      <div className="container" style={{ maxWidth: '700px' }}>
-        {/* Form header */}
-        <div className="card" style={{
-          marginBottom: '1.5rem',
-          borderTop: '4px solid var(--color-primary)',
-          padding: '2rem',
-        }}>
-          <h1 style={{ marginBottom: '0.5rem', fontSize: '1.85rem' }}>{form.title}</h1>
+    <div className="min-h-screen" style={{ paddingTop: '3rem', paddingBottom: '4rem' }}>
+      <div className="container" style={{ maxWidth: '600px' }}>
+        {/* Header */}
+        <div style={{ marginBottom: '2.5rem' }}>
+          <h1 style={{ marginBottom: '0.4rem' }}>{form.title}</h1>
           {form.description && (
-            <p className="text-muted" style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>{form.description}</p>
+            <p style={{ color: 'var(--gray-400)', fontSize: '0.95rem', marginBottom: '0.4rem' }}>{form.description}</p>
           )}
-          <p style={{ fontSize: '0.8rem', color: 'var(--color-text-tertiary)', marginBottom: 0 }}>
-            Fields marked with <span style={{ color: 'var(--color-error)' }}>*</span> are required
+          <p style={{ fontSize: '0.75rem', color: 'var(--gray-600)' }}>
+            * indicates required
           </p>
         </div>
 
         <form onSubmit={handleSubmit}>
-          {/* Questions */}
           {form.questions
             .sort((a, b) => a.order_index - b.order_index)
             .map((q, idx) => (
-              <div key={q.question_id} className="card fade-in" style={{
-                marginBottom: '1rem', padding: '1.5rem',
-                animationDelay: `${idx * 60}ms`,
+              <div key={q.question_id} className="fade-in" style={{
+                marginBottom: '2rem',
+                paddingBottom: '2rem',
+                borderBottom: idx < form.questions.length - 1 ? '1px solid var(--color-border)' : 'none',
+                animationDelay: `${idx * 50}ms`,
               }}>
                 <label style={{
-                  display: 'block', fontWeight: '500', marginBottom: '1rem',
-                  fontSize: '1rem', lineHeight: '1.5',
+                  display: 'block', fontWeight: 500, marginBottom: '0.85rem',
+                  fontSize: '0.95rem', lineHeight: 1.5, color: 'var(--gray-200)',
                 }}>
                   {q.question_text}
-                  {q.is_required && <span style={{ color: 'var(--color-error)', marginLeft: '4px' }}>*</span>}
+                  {q.is_required && <span style={{ color: 'var(--gray-500)', marginLeft: '4px' }}>*</span>}
                 </label>
 
-                {/* ── Short text ── */}
-                {(q.question_type === 'text') && (
+                {/* Short text */}
+                {q.question_type === 'text' && (
                   <input
-                    type="text"
-                    className="form-input"
-                    placeholder="Your answer..."
+                    type="text" className="form-input"
+                    placeholder="Your answer…"
                     value={answers[q.question_id] || ''}
                     onChange={e => updateAnswer(q.question_id, e.target.value)}
                   />
                 )}
 
-                {/* ── Long text ── */}
-                {(q.question_type === 'textarea') && (
+                {/* Long text */}
+                {q.question_type === 'textarea' && (
                   <textarea
                     className="form-input"
-                    placeholder="Your answer..."
-                    rows={4}
-                    style={{ resize: 'vertical' }}
+                    placeholder="Your answer…"
+                    rows={4} style={{ resize: 'vertical' }}
                     value={answers[q.question_id] || ''}
                     onChange={e => updateAnswer(q.question_id, e.target.value)}
                   />
                 )}
 
-                {/* ── Rating ── */}
+                {/* Rating */}
                 {q.question_type === 'rating' && (
                   <RatingInput
                     value={answers[q.question_id] || 0}
@@ -226,53 +208,60 @@ export default function FillForm() {
                   />
                 )}
 
-                {/* ── Yes / No ── */}
+                {/* Yes / No */}
                 {q.question_type === 'yes_no' && (
-                  <div style={{ display: 'flex', gap: '1rem' }}>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
                     {['Yes', 'No'].map(opt => (
-                      <label key={opt} style={{
-                        display: 'flex', alignItems: 'center', gap: '0.5rem',
-                        cursor: 'pointer', padding: '0.6rem 1.2rem',
-                        borderRadius: 'var(--radius-md)',
-                        border: '1px solid',
-                        borderColor: answers[q.question_id] === opt ? 'var(--color-primary)' : 'var(--color-border)',
-                        background: answers[q.question_id] === opt ? 'rgba(99,102,241,0.1)' : 'transparent',
-                        transition: 'all 150ms ease',
-                      }}>
-                        <input
-                          type="radio"
-                          name={`q_${q.question_id}`}
-                          value={opt}
-                          checked={answers[q.question_id] === opt}
-                          onChange={() => updateAnswer(q.question_id, opt)}
-                          style={{ accentColor: 'var(--color-primary)' }}
-                        />
+                      <button
+                        type="button" key={opt}
+                        onClick={() => updateAnswer(q.question_id, opt)}
+                        style={{
+                          padding: '0.5rem 1.5rem',
+                          borderRadius: 'var(--radius-md)',
+                          border: '1px solid',
+                          borderColor: answers[q.question_id] === opt ? 'var(--white)' : 'var(--color-border-light)',
+                          background: answers[q.question_id] === opt ? 'var(--white)' : 'transparent',
+                          color: answers[q.question_id] === opt ? 'var(--black)' : 'var(--gray-400)',
+                          fontSize: '0.85rem', fontWeight: 500,
+                          cursor: 'pointer', transition: 'all 0.15s ease',
+                        }}
+                      >
                         {opt}
-                      </label>
+                      </button>
                     ))}
                   </div>
                 )}
 
-                {/* ── Multiple choice ── */}
+                {/* Multiple choice */}
                 {q.question_type === 'multiple_choice' && q.options && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                     {q.options.map((opt, i) => (
                       <label key={i} style={{
                         display: 'flex', alignItems: 'center', gap: '0.6rem',
-                        cursor: 'pointer', padding: '0.6rem 1rem',
+                        cursor: 'pointer', padding: '0.55rem 0.85rem',
                         borderRadius: 'var(--radius-md)',
                         border: '1px solid',
-                        borderColor: answers[q.question_id] === opt ? 'var(--color-primary)' : 'var(--color-border)',
-                        background: answers[q.question_id] === opt ? 'rgba(99,102,241,0.1)' : 'transparent',
-                        transition: 'all 150ms ease',
+                        borderColor: answers[q.question_id] === opt ? 'var(--white)' : 'var(--color-border)',
+                        background: answers[q.question_id] === opt ? 'rgba(255,255,255,0.05)' : 'transparent',
+                        transition: 'all 0.15s ease',
+                        fontSize: '0.9rem', color: 'var(--gray-300)',
                       }}>
+                        <div style={{
+                          width: '16px', height: '16px', borderRadius: '50%',
+                          border: '1.5px solid',
+                          borderColor: answers[q.question_id] === opt ? 'var(--white)' : 'var(--gray-600)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          flexShrink: 0,
+                        }}>
+                          {answers[q.question_id] === opt && (
+                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--white)' }} />
+                          )}
+                        </div>
                         <input
-                          type="radio"
-                          name={`q_${q.question_id}`}
-                          value={opt}
-                          checked={answers[q.question_id] === opt}
+                          type="radio" name={`q_${q.question_id}`}
+                          value={opt} checked={answers[q.question_id] === opt}
                           onChange={() => updateAnswer(q.question_id, opt)}
-                          style={{ accentColor: 'var(--color-primary)' }}
+                          style={{ display: 'none' }}
                         />
                         {opt}
                       </label>
@@ -280,14 +269,14 @@ export default function FillForm() {
                   </div>
                 )}
 
-                {/* ── Dropdown ── */}
+                {/* Dropdown */}
                 {q.question_type === 'dropdown' && q.options && (
                   <select
                     className="form-input"
                     value={answers[q.question_id] || ''}
                     onChange={e => updateAnswer(q.question_id, e.target.value)}
                   >
-                    <option value="">Select an option...</option>
+                    <option value="">Select…</option>
                     {q.options.map((opt, i) => (
                       <option key={i} value={opt}>{opt}</option>
                     ))}
@@ -300,22 +289,20 @@ export default function FillForm() {
           {/* Error */}
           {error && (
             <div style={{
-              background: 'rgba(239,68,68,0.1)', border: '1px solid var(--color-error)',
-              borderRadius: 'var(--radius-md)', padding: '0.85rem 1rem',
-              color: 'var(--color-error)', marginBottom: '1rem', fontSize: '0.9rem',
+              padding: '0.75rem 1rem', marginBottom: '1.5rem',
+              border: '1px solid rgba(220,38,38,0.2)',
+              borderRadius: 'var(--radius-md)',
+              color: '#f87171', fontSize: '0.85rem',
+              background: 'rgba(220,38,38,0.05)',
             }}>
               {error}
             </div>
           )}
 
-          {/* Submit */}
-          <button
-            type="submit"
-            className="btn btn-primary"
-            disabled={submitting}
-            style={{ fontSize: '1rem', padding: '0.85rem 2.5rem' }}
+          <button type="submit" className="btn btn-primary" disabled={submitting}
+            style={{ padding: '0.7rem 2rem' }}
           >
-            {submitting ? 'Submitting...' : 'Submit'}
+            {submitting ? 'Submitting…' : 'Submit'}
           </button>
         </form>
       </div>

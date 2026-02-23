@@ -9,6 +9,7 @@ import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import CreateForm from './pages/CreateForm'
 import FillForm from './pages/FillForm'
+import FormResponses from './pages/FormResponses'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -59,6 +60,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <CreateForm />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/forms/:formId/responses" 
+                element={
+                  <ProtectedRoute>
+                    <FormResponses />
                   </ProtectedRoute>
                 } 
               />
