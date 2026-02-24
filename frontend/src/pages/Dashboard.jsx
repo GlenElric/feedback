@@ -214,6 +214,9 @@ export default function Dashboard() {
                     <button className="btn btn-secondary btn-sm" onClick={() => navigate(`/forms/${form.form_id}/responses`)}>
                       Results
                     </button>
+                    <button className="btn btn-secondary btn-sm" onClick={() => navigate(`/forms/${form.form_id}/insights`)}>
+                      Insights
+                    </button>
                     <button className="btn btn-ghost btn-sm" onClick={() => handleToggleActive(form)}>
                       {form.is_active ? 'Pause' : 'Resume'}
                     </button>

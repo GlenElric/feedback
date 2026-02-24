@@ -48,13 +48,9 @@ async def health_check():
 
 
 # Import and include routers
-from .routers import auth, forms, public
+from .routers import auth, forms, public, analytics
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(forms.router, prefix="/api/forms", tags=["Forms"])
 app.include_router(public.router, prefix="/api/public", tags=["Public"])
-
-# To be uncommented when created:
-# from .routers import responses, analytics
-# app.include_router(responses.router, prefix="/api/responses", tags=["Responses"])
-# app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"])
+app.include_router(analytics.router, prefix="/api/forms", tags=["Analytics"])
 

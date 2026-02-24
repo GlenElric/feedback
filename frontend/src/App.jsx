@@ -10,6 +10,7 @@ import Dashboard from './pages/Dashboard'
 import CreateForm from './pages/CreateForm'
 import FillForm from './pages/FillForm'
 import FormResponses from './pages/FormResponses'
+import FormInsights from './pages/FormInsights'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -68,6 +69,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <FormResponses />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/forms/:formId/insights" 
+                element={
+                  <ProtectedRoute>
+                    <FormInsights />
                   </ProtectedRoute>
                 } 
               />
